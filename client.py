@@ -1,26 +1,15 @@
 import Tkinter as tk
 import tkMessageBox
 import socket
-from time import sleep
 import threading
 
-# MAIN GAME WINDOW
 window_main = tk.Tk()
 window_main.title("Tic Tac Toe")
-top_welcome_frame= tk.Frame(window_main)
-lbl_name = tk.Label(top_welcome_frame, text = "Name:")
-lbl_name.pack(side=tk.LEFT)
-ent_name = tk.Entry(top_welcome_frame)
-ent_name.pack(side=tk.LEFT)
-btn_connect = tk.Button(top_welcome_frame, text="Connect", command=lambda : connect())
-btn_connect.pack(side=tk.LEFT)
-top_welcome_frame.pack(side=tk.TOP)
-
 top_frame = tk.Frame(window_main)
 
 client = None
 HOST_ADDR = "127.0.0.1"
-HOST_PORT = 5020
+HOST_PORT = 6020
 
 list_labels = []
 num_cols = 3
@@ -28,7 +17,7 @@ your_turn = False
 you_started = False
 
 your_details = {
-    "name": "Charles",
+    "name": " ",
     "symbol": "X",
     "color" : "",
     "score" : 0
@@ -43,24 +32,19 @@ opponent_details = {
 
 for x in range(3):
     for y in range(3):
-        lbl = tk.Label(top_frame, text=" ", font="Helvetica 45 bold", height=2, width=5, highlightbackground="grey",
-                       highlightcolor="grey", highlightthickness=1)
+        lbl = tk.Label(top_frame, text=" ", font="Helvetica 50 bold", height=2, width=5, highlightbackground="grey",
+                       highlightcolor="grey", highlightthickness=1, bg="lightblue")
         lbl.bind("<Button-1>", lambda e, xy=[x, y]: get_cordinate(xy))
         lbl.grid(row=x, column=y)
 
         dict_labels = {"xy": [x, y], "symbol": "", "label": lbl, "ticked": False}
         list_labels.append(dict_labels)
 
-lbl_status = tk.Label(top_frame, text="Status: Not connected to server", font="Helvetica 14 bold")
-lbl_status.grid(row=3, columnspan=3)
-
 top_frame.pack_forget()
 
 
 def init(arg0, arg1):
     global list_labels, your_turn, your_details, opponent_details, you_started
-
-    sleep(3)
 
     for i in range(len(list_labels)):
         list_labels[i]["symbol"] = ""
@@ -69,22 +53,17 @@ def init(arg0, arg1):
         list_labels[i]["label"].config(foreground="black", highlightbackground="grey",
                                        highlightcolor="grey", highlightthickness=1)
 
-    lbl_status.config(foreground="black")
-    sleep(3)
-
     if you_started:
         you_started = False
         your_turn = False
-        lbl_status["text"] = "STATUS: " + opponent_details["name"] + "'s turn!"
     else:
         you_started = True
         your_turn = True
-        lbl_status["text"] = "STATUS: Your turn!"
 
 
 def get_cordinate(xy):
     global client, your_turn
-    # convert 2D to 1D cordinate i.e. index = x * num_cols + y
+
     label_index = xy[0] * num_cols + xy[1]
     label = list_labels[label_index]
 
@@ -99,29 +78,14 @@ def get_cordinate(xy):
 
             # Does this play leads to a win or a draw
             result = game_logic()
-            if result[0] is True and result[1] != "":  # a win
+            if result[0] is True and result[1] != "":
                 your_details["score"] = your_details["score"] + 1
-                lbl_status["text"] = "Game over, You won! You(" + str(your_details["score"]) + ") - " \
-                    "" + opponent_details["name"] + "(" + str(opponent_details["score"])+")"
-                lbl_status.config(foreground="green")
+                tkMessageBox.showinfo(title="Ganaste!", message="" + your_details["name"] + ": " + str(your_details["score"]) + "       " + opponent_details["name"] + ": " + str(opponent_details["score"]))
+                threading._start_new_thread(init, ("", ""))
+            elif result[0] is True and result[1] == "":
+                tkMessageBox.showinfo(title="Empate", message="" + your_details["name"] + ": " + str(your_details["score"])+ "       " + opponent_details["name"] + ": " + str(opponent_details["score"]))
                 threading._start_new_thread(init, ("", ""))
 
-            elif result[0] is True and result[1] == "":  # a draw
-                lbl_status["text"] = "Game over, Draw! You(" + str(your_details["score"]) + ") - " \
-                    "" + opponent_details["name"] + "(" + str(opponent_details["score"]) + ")"
-                lbl_status.config(foreground="blue")
-                threading._start_new_thread(init, ("", ""))
-
-            else:
-                lbl_status["text"] = "STATUS: " + opponent_details["name"] + "'s turn!"
-    else:
-        lbl_status["text"] = "STATUS: Wait for your turn!"
-        lbl_status.config(foreground="red")
-
-        # send xy coordinate to server to server
-
-
-# [(0,0) -> (0,1) -> (0,2)], [(1,0) -> (1,1) -> (1,2)], [(2,0), (2,1), (2,2)]
 def check_row():
     list_symbols = []
     list_labels_temp = []
@@ -135,14 +99,6 @@ def check_row():
                 if list_symbols[0] != "":
                     winner = True
                     win_symbol = list_symbols[0]
-
-                    list_labels_temp[0]["label"].config(foreground="green", highlightbackground="green",
-                                                        highlightcolor="green", highlightthickness=2)
-                    list_labels_temp[1]["label"].config(foreground="green", highlightbackground="green",
-                                                        highlightcolor="green", highlightthickness=2)
-                    list_labels_temp[2]["label"].config(foreground="green", highlightbackground="green",
-                                                        highlightcolor="green", highlightthickness=2)
-
             list_symbols = []
             list_labels_temp = []
 
@@ -157,13 +113,6 @@ def check_col():
             if list_labels[i]["symbol"] != "":
                 winner = True
                 win_symbol = list_labels[i]["symbol"]
-
-                list_labels[i]["label"].config(foreground="green", highlightbackground="green",
-                                               highlightcolor="green", highlightthickness=2)
-                list_labels[i + num_cols]["label"].config(foreground="green", highlightbackground="green",
-                                                          highlightcolor="green", highlightthickness=2)
-                list_labels[i + num_cols + num_cols]["label"].config(foreground="green", highlightbackground="green",
-                                                                     highlightcolor="green", highlightthickness=2)
 
     return [winner, win_symbol]
 
@@ -183,27 +132,12 @@ def check_diagonal():
             winner = True
             win_symbol = list_labels[i]["symbol"]
 
-            list_labels[i]["label"].config(foreground="green", highlightbackground="green",
-                                           highlightcolor="green", highlightthickness=2)
-
-            list_labels[i + (num_cols + 1)]["label"].config(foreground="green", highlightbackground="green",
-                                                            highlightcolor="green", highlightthickness=2)
-            list_labels[(num_cols + num_cols) + (i + 2)]["label"].config(foreground="green",
-                                                                         highlightbackground="green",
-                                                                         highlightcolor="green", highlightthickness=2)
-
     elif list_labels[j]["symbol"] == list_labels[j + (num_cols - 1)]["symbol"] == list_labels[j + (num_cols + 1)][
         "symbol"]:
         if list_labels[j]["symbol"] != "":
             winner = True
             win_symbol = list_labels[j]["symbol"]
 
-            list_labels[j]["label"].config(foreground="green", highlightbackground="green",
-                                           highlightcolor="green", highlightthickness=2)
-            list_labels[j + (num_cols - 1)]["label"].config(foreground="green", highlightbackground="green",
-                                                            highlightcolor="green", highlightthickness=2)
-            list_labels[j + (num_cols + 1)]["label"].config(foreground="green", highlightbackground="green",
-                                                            highlightcolor="green", highlightthickness=2)
     else:
         winner = False
 
@@ -232,28 +166,16 @@ def game_logic():
     result = check_draw()
     return result
 
-
-def connect():
-    global your_details
-    if len(ent_name.get()) < 1:
-        tkMessageBox.showerror(title="ERROR!!!", message="You MUST enter your first name <e.g. John>")
-    else:
-        your_details["name"] = ent_name.get()
-        connect_to_server(ent_name.get())
-
-
-def connect_to_server(name):
+def connect_to_server():
     global client, HOST_PORT, HOST_ADDR
     try:
         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client.connect((HOST_ADDR, HOST_PORT))
-        client.send(name)  # Send name to server after connecting
         
         # start a thread to keep receiving message from server
         threading._start_new_thread(receive_message_from_server, (client, "m"))
-        top_welcome_frame.pack_forget()
         top_frame.pack(side=tk.TOP)
-        window_main.title("Tic-Tac-Toe Client - " + name)
+        window_main.title("Tic-Tac-Toe " + your_details["name"])
     except Exception as e:
         tkMessageBox.showerror(title="ERROR!!!", message="Cannot connect to host: " + HOST_ADDR + " on port: " + str(
             HOST_PORT) + " Server may be Unavailable. Try again later")
@@ -267,14 +189,15 @@ def receive_message_from_server(sck, m):
         if not from_server: break
 
         if from_server.startswith("welcome"):
-            if from_server == "welcome1":
-                your_details["color"] = "purple"
-                opponent_details["color"] = "orange"
-                lbl_status["text"] = "Server: Welcome " + your_details["name"] + "! Waiting for player 2"
-            elif from_server == "welcome2":
-                lbl_status["text"] = "Server: Welcome " + your_details["name"] + "! Game will start soon"
-                your_details["color"] = "orange"
-                opponent_details["color"] = "purple"
+            if from_server == "welcome player 1":
+                your_details["color"] = "black"
+                your_details["name"] = "player 1"
+                opponent_details["color"] = "white"
+
+            elif from_server == "welcome player 2":
+                your_details["color"] = "white"
+                your_details["name"] = "player 2"
+                opponent_details["color"] = "black"
 
         elif from_server.startswith("opponent_name$"):
             temp = from_server.replace("opponent_name$", "")
@@ -289,15 +212,10 @@ def receive_message_from_server(sck, m):
             else:
                 opponent_details["symbol"] = "O"
 
-            lbl_status["text"] = "STATUS: " + opponent_details["name"] + " is connected!"
-            sleep(3)
-
             if your_details["symbol"] == "O":
-                lbl_status["text"] = "STATUS: Your turn!"
                 your_turn = True
                 you_started = True
             else:
-                lbl_status["text"] = "STATUS: " + opponent_details["name"] + "'s turn!"
                 you_started = False
                 your_turn = False
         elif from_server.startswith("$xy$"):
@@ -317,21 +235,15 @@ def receive_message_from_server(sck, m):
             if result[0] is True and result[1] != "":  # opponent win
                 opponent_details["score"] = opponent_details["score"] + 1
                 if result[1] == opponent_details["symbol"]:  #
-                    lbl_status["text"] = "Game over, You Lost! You(" + str(your_details["score"]) + ") - " \
-                        "" + opponent_details["name"] + "(" + str(opponent_details["score"]) + ")"
-                    lbl_status.config(foreground="red")
+                    tkMessageBox.showinfo(title="Perdiste", message="" + your_details["name"] + ": " + str(your_details["score"]) + "       " + opponent_details["name"] + ": " + str(opponent_details["score"]))
                     threading._start_new_thread(init, ("", ""))
             elif result[0] is True and result[1] == "":  # a draw
-                lbl_status["text"] = "Game over, Draw! You(" + str(your_details["score"]) + ") - " \
-                    "" + opponent_details["name"] + "(" + str(opponent_details["score"]) + ")"
-                lbl_status.config(foreground="blue")
+                tkMessageBox.showinfo(title="Empate", message="" + your_details["name"] + ": " + str(your_details["score"]) + "       " + opponent_details["name"] + ": " + str(opponent_details["score"]))
                 threading._start_new_thread(init, ("", ""))
             else:
                 your_turn = True
-                lbl_status["text"] = "STATUS: Your turn!"
-                lbl_status.config(foreground="black")
 
     sck.close()
 
-
+connect_to_server()
 window_main.mainloop()
