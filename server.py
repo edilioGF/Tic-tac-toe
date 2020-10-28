@@ -27,8 +27,6 @@ clients = []
 clients_names = []
 player_data = []
 
-
-# Start server function
 def start_server():
     global server, HOST_ADDR, HOST_PORT
 
@@ -45,17 +43,10 @@ def accept_clients(the_server, y):
             client, addr = the_server.accept()
             clients.append(client)
 
-            # use a thread so as not to clog the gui thread
             threading._start_new_thread(send_receive_client_message, (client, addr))
 
-
-# Function to receive message from current client AND
-# Send that message to other clients
 def send_receive_client_message(client_connection, client_ip_addr):
     global server, client_name, clients, player_data, player0, player1
-
-    # send welcome message to client
-    #client_name = client_connection.recv(4096)
 
     if len(clients) == 1:
         client_connection.send("welcome player 1")
@@ -74,27 +65,22 @@ def send_receive_client_message(client_connection, client_ip_addr):
 
     while True:
 
-        # get the player choice from received data
+        # get the player move
         data = client_connection.recv(4096)
         if not data: break
 
         # player x,y coordinate data. forward to the other player
         if data.startswith("$xy$"):
-            # is the message from client1 or client2?
             if client_connection == clients[0]:
-                # send the data from this player (client) to the other player (client)
                 clients[1].send(data)
             else:
-                # send the data from this player (client) to the other player (client)
                 clients[0].send(data)
 
-    # find the client index then remove from both lists(client name list and connection list)
     idx = get_client_index(clients, client_connection)
     del clients_names[idx]
     del clients[idx]
     client_connection.close()
 
-# Return the index of the current client in the list of clients
 def get_client_index(client_list, curr_client):
     idx = 0
     for conn in client_list:
