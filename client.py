@@ -17,14 +17,14 @@ your_turn = False
 you_started = False
 
 your_details = {
-    "name": " ",
+    "name": "",
     "symbol": "X",
     "color" : "",
     "score" : 0
 }
 
 opponent_details = {
-    "name": " ",
+    "name": "",
     "symbol": "O",
     "color": "",
     "score": 0
@@ -32,8 +32,8 @@ opponent_details = {
 
 for x in range(3):
     for y in range(3):
-        lbl = tk.Label(top_frame, text=" ", font="Helvetica 50 bold", height=2, width=5, highlightbackground="grey",
-                       highlightcolor="grey", highlightthickness=1, bg="lightblue")
+        lbl = tk.Label(top_frame, text=" ", font="Helvetica 40 bold", height=2, width=4, highlightbackground="grey",
+                       highlightcolor="grey", highlightthickness=1, bg="white")
         lbl.bind("<Button-1>", lambda e, xy=[x, y]: get_cordinate(xy))
         lbl.grid(row=x, column=y)
 
@@ -62,7 +62,7 @@ def init(arg0, arg1):
 
 
 def get_cordinate(xy):
-    global client, your_turn
+    global client, your_turn, you_started
 
     label_index = xy[0] * num_cols + xy[1]
     label = list_labels[label_index]
@@ -78,13 +78,24 @@ def get_cordinate(xy):
 
             # Does this play leads to a win or a draw
             result = game_logic()
+            if result[0] is True:
+                if you_started:
+                    message = opponent_details["symbol"] + " empieza la proxima ronda"
+                else:
+                    message = your_details["symbol"] + " empieza la proxima ronda"
+
             if result[0] is True and result[1] != "":
                 your_details["score"] = your_details["score"] + 1
-                tkMessageBox.showinfo(title="Ganaste!", message="" + your_details["name"] + ": " + str(your_details["score"]) + "       " + opponent_details["name"] + ": " + str(opponent_details["score"]))
+                tkMessageBox.showinfo(title="Ganaste!", message="Player " + your_details["symbol"] + ": " + str(your_details["score"]) + "       Player " + opponent_details["symbol"] + ": " + str(opponent_details["score"]) + '\n\n' + message )
                 threading._start_new_thread(init, ("", ""))
             elif result[0] is True and result[1] == "":
-                tkMessageBox.showinfo(title="Empate", message="" + your_details["name"] + ": " + str(your_details["score"])+ "       " + opponent_details["name"] + ": " + str(opponent_details["score"]))
+                tkMessageBox.showinfo(title="Empate", message="Player " + your_details["symbol"] + ": " + str(your_details["score"])+ "       Player " + opponent_details["symbol"] + ": " + str(opponent_details["score"]) + '\n\n' + message )
                 threading._start_new_thread(init, ("", ""))
+    elif opponent_details['name'] == "":
+        tkMessageBox.showinfo(title="Error", message="Esperando por el jugador 2")
+    else:
+        tkMessageBox.showinfo(title="Error", message="No es tu turno")
+
 
 def check_row():
     list_symbols = []
@@ -190,14 +201,14 @@ def receive_message_from_server(sck, m):
 
         if from_server.startswith("welcome"):
             if from_server == "welcome player 1":
-                your_details["color"] = "black"
+                your_details["color"] = "blue"
                 your_details["name"] = "player 1"
-                opponent_details["color"] = "white"
+                opponent_details["color"] = "red"
 
             elif from_server == "welcome player 2":
-                your_details["color"] = "white"
+                your_details["color"] = "red"
                 your_details["name"] = "player 2"
-                opponent_details["color"] = "black"
+                opponent_details["color"] = "blue"
 
         elif from_server.startswith("opponent_name$"):
             temp = from_server.replace("opponent_name$", "")
@@ -232,13 +243,19 @@ def receive_message_from_server(sck, m):
             label["ticked"] = True
 
             result = game_logic()
+            if result[0] is True:
+                if you_started:
+                    message = opponent_details["symbol"] + " empieza la proxima ronda"
+                else:
+                    message = your_details["symbol"] + " empieza la proxima ronda"
+
             if result[0] is True and result[1] != "":  # opponent win
                 opponent_details["score"] = opponent_details["score"] + 1
                 if result[1] == opponent_details["symbol"]:  #
-                    tkMessageBox.showinfo(title="Perdiste", message="" + your_details["name"] + ": " + str(your_details["score"]) + "       " + opponent_details["name"] + ": " + str(opponent_details["score"]))
+                    tkMessageBox.showinfo(title="Perdiste", message="Player " + your_details["symbol"] + ": " + str(your_details["score"]) + "       Player " + opponent_details["symbol"] + ": " + str(opponent_details["score"]) + '\n\n' + message)
                     threading._start_new_thread(init, ("", ""))
             elif result[0] is True and result[1] == "":  # a draw
-                tkMessageBox.showinfo(title="Empate", message="" + your_details["name"] + ": " + str(your_details["score"]) + "       " + opponent_details["name"] + ": " + str(opponent_details["score"]))
+                tkMessageBox.showinfo(title="Empate", message="Player " + your_details["symbol"] + ": " + str(your_details["score"]) + "       Player " + opponent_details["symbol"] + ": " + str(opponent_details["score"]) + '\n\n' + message )
                 threading._start_new_thread(init, ("", ""))
             else:
                 your_turn = True
