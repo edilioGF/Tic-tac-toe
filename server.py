@@ -48,6 +48,8 @@ def accept_clients(the_server, y):
 def send_receive_client_message(client_connection, client_ip_addr):
     global server, client_name, clients, player_data, player0, player1
 
+    if len(clients) == 3:
+        return
     if len(clients) == 1:
         client_connection.send("welcome player 1")
         client_name = "player 1"
